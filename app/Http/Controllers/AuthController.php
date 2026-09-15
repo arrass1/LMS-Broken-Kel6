@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -31,9 +32,14 @@ class AuthController extends Controller
             ]);
         }
 
+        if (! User::where('email', $credentials['email'])->exists()) {
+            throw ValidationException::withMessages([
+                'email' => 'Email tidak terdaftar.',
+            ]);
+        }
+
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             RateLimiter::clear($throttleKey);
-            $request->session()->regenerate();
 
             return redirect()->intended(route('dashboard'));
         }
@@ -41,7 +47,7 @@ class AuthController extends Controller
         RateLimiter::hit($throttleKey);
 
         throw ValidationException::withMessages([
-            'email' => 'Email atau password yang Anda masukkan salah.',
+            'email' => 'Password yang Anda masukkan salah.',
         ]);
     }
 
